@@ -6,7 +6,7 @@ require 'rubygems'
 require 'bundler'
 require 'sinatra'
 require 'omniauth'
-require 'omniauth-myvr'
+require '../lib/omniauth_myvr'
 
 # Do not use for production code.
 # This is only to make setup easier when running through the sample.

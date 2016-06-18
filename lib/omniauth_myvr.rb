@@ -1,7 +1,7 @@
-require File.join('omniauth', 'myvr')
+require File.join('omniauth', 'strategies', 'myvr')
 
 module OmniAuth
-  module MyVROAuth
-    VERSION = '0.0.1'
+  module Myvr
+    VERSION = '0.0.3'
   end
 end
