@@ -3,7 +3,6 @@ require 'jwt'
 require 'omniauth/strategies/oauth2'
 require 'uri'
 require 'httplog'
-require 'byebug'
 
 module OmniAuth
   module Strategies

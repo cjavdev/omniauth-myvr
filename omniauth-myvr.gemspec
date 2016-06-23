@@ -3,7 +3,7 @@ $:.push File.expand_path("../lib", __FILE__)
 
 Gem::Specification.new do |s|
   s.name        = "omniauth-myvr"
-  s.version     = "0.0.17"
+  s.version     = "0.1.0"
   s.authors     = ["CJ Avilla"]
   s.email       = ["cjavilla@gmail.com"]
   s.homepage    = "https://github.com/w1zeman1p/omniauth-myvr"
