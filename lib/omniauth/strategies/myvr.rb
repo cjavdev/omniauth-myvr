@@ -2,55 +2,23 @@ require 'multi_json'
 require 'jwt'
 require 'omniauth/strategies/oauth2'
 require 'uri'
+require 'httplog'
+require 'byebug'
 
 module OmniAuth
   module Strategies
     class Myvr < OmniAuth::Strategies::OAuth2
-      BASE_SCOPE_URL = ENV.fetch('BASE_SCOPE_URL', "https://api.myvr.com/auth/")
-      BASE_SCOPES = %w[profile email openid]
-      DEFAULT_SCOPE = "email,profile"
+      BASE_SCOPE_URL = "http://local.api.myvr.com:8000/auth/"
+      BASE_SCOPES = %w[property_read]
+      DEFAULT_SCOPE = 'property_read'
 
       option :name, 'myvr'
-      option :skip_friends, true
-      option :skip_image_info, true
-      option :skip_jwt, false
-      option :jwt_leeway, 60
-      option :authorize_options, [
-        :access_type,
-        :hd,
-        :login_hint,
-        :prompt,
-        :request_visible_actions,
-        :scope,
-        :state,
-        :redirect_uri,
-        :include_granted_scopes,
-        :openid_realm
-      ]
-      option :authorized_client_ids, []
-
+      option :authorize_params, {grant_type: 'authorization_code'}
       option :client_options, {
-        :site          => ENV.fetch('BASE_SITE', 'https://myvr.com/'),
-        :authorize_url => '/connect/oauth/auth',
-        :token_url     => '/connect/oauth/token'
+        :site          => 'http://local.myvr.com:8000/',
+        :authorize_url => 'http://local.myvr.com:8000/connect/oauth/auth',
+        :token_url     => 'http://api.local.myvr.com:8000/oauth/token/'
       }
-
-      # def authorize_params
-      #   super.tap do |params|
-      #     options[:authorize_options].each do |k|
-      #       params[k] = request.params[k.to_s] unless [nil, ''].include?(request.params[k.to_s])
-      #     end
-      #
-      #     raw_scope = params[:scope] || DEFAULT_SCOPE
-      #     scope_list = raw_scope.split(" ").map {|item| item.split(",")}.flatten
-      #     scope_list.map! { |s| s =~ /^https?:\/\// || BASE_SCOPES.include?(s) ? s : "#{BASE_SCOPE_URL}#{s}" }
-      #     params[:scope] = scope_list.join(" ")
-      #     params[:access_type] = 'offline' if params[:access_type].nil?
-      #     params['openid.realm'] = params.delete(:openid_realm) unless params[:openid_realm].nil?
-      #
-      #     session['omniauth.state'] = params[:state] if params['state']
-      #   end
-      # end
 
       # uid { raw_info['sub'] || verified_email }
       #
@@ -102,112 +70,27 @@ module OmniAuth
       # def raw_image_info(id)
       #   @raw_image_info ||= access_token.get("https://www.googleapis.com/plus/v1/people/#{id}?fields=image").parsed
       # end
-      #
-      # def custom_build_access_token
-      #   access_token =
-      #     if request.xhr? && request.params['code']
-      #       verifier = request.params['code']
-      #       client.auth_code.get_token(verifier, get_token_options('postmessage'), deep_symbolize(options.auth_token_params || {}))
-      #     elsif request.params['code'] && request.params['redirect_uri']
-      #       verifier = request.params['code']
-      #       redirect_uri = request.params['redirect_uri']
-      #       client.auth_code.get_token(verifier, get_token_options(redirect_uri), deep_symbolize(options.auth_token_params || {}))
-      #     elsif verify_token(request.params['access_token'])
-      #       ::OAuth2::AccessToken.from_hash(client, request.params.dup)
-      #     else
-      #       verifier = request.params["code"]
-      #       client.auth_code.get_token(verifier, get_token_options(callback_url), deep_symbolize(options.auth_token_params))
-      #     end
-      #
-      #   verify_hd(access_token)
-      #   access_token
-      # end
-      # alias_method :build_access_token, :custom_build_access_token
-      #
-      # private
-      #
-      # def callback_url
-      #   options[:redirect_uri] || (full_host + script_name + callback_path)
-      # end
-      #
-      # def get_token_options(redirect_uri)
-      #   { :redirect_uri => redirect_uri }.merge(token_params.to_hash(:symbolize_keys => true))
-      # end
-      #
-      # def prune!(hash)
-      #   hash.delete_if do |_, v|
-      #     prune!(v) if v.is_a?(Hash)
-      #     v.nil? || (v.respond_to?(:empty?) && v.empty?)
-      #   end
-      # end
-      #
-      # def verified_email
-      #   raw_info['email_verified'] ? raw_info['email'] : nil
-      # end
-      #
-      # def image_url
-      #   return nil unless raw_info['picture']
-      #
-      #   u = URI.parse(raw_info['picture'].gsub('https:https', 'https'))
-      #
-      #   path_index = u.path.to_s.index('/photo.jpg')
-      #
-      #   if path_index && image_size_opts_passed?
-      #     u.path.insert(path_index, image_params)
-      #     u.path = u.path.gsub('//', '/')
-      #   end
-      #
-      #   u.query = strip_unnecessary_query_parameters(u.query)
-      #
-      #   u.to_s
-      # end
-      #
-      # def image_size_opts_passed?
-      #   !!(options[:image_size] || options[:image_aspect_ratio])
-      # end
-      #
-      # def image_params
-      #   image_params = []
-      #   if options[:image_size].is_a?(Integer)
-      #     image_params << "s#{options[:image_size]}"
-      #   elsif options[:image_size].is_a?(Hash)
-      #     image_params << "w#{options[:image_size][:width]}" if options[:image_size][:width]
-      #     image_params << "h#{options[:image_size][:height]}" if options[:image_size][:height]
-      #   end
-      #   image_params << 'c' if options[:image_aspect_ratio] == 'square'
-      #
-      #   '/' + image_params.join('-')
-      # end
-      #
-      # def strip_unnecessary_query_parameters(query_parameters)
-      #   # strip `sz` parameter (defaults to sz=50) which overrides `image_size` options
-      #   return nil if query_parameters.nil?
-      #
-      #   params = CGI.parse(query_parameters)
-      #   stripped_params = params.delete_if { |key| key == "sz" }
-      #
-      #   # don't return an empty Hash since that would result
-      #   # in URLs with a trailing ? character: http://image.url?
-      #   return nil if stripped_params.empty?
-      #
-      #   URI.encode_www_form(stripped_params)
-      # end
-      #
-      # def verify_token(access_token)
-      #   return false unless access_token
-      #   raw_response = client.request(:get, 'https://www.googleapis.com/oauth2/v3/tokeninfo',
-      #                                 params: { access_token: access_token }).parsed
-      #   raw_response['aud'] == options.client_id || options.authorized_client_ids.include?(raw_response['aud'])
-      # end
-      #
-      # def verify_hd(access_token)
-      #   return true unless options.hd
-      #   @raw_info ||= access_token.get('https://www.googleapis.com/plus/v1/people/me/openIdConnect').parsed
-      #   allowed_hosted_domains = Array(options.hd)
-      #
-      #   raise CallbackError.new(:invalid_hd, "Invalid Hosted Domain") unless allowed_hosted_domains.include? @raw_info['hd']
-      #   true
-      # end
+
+
+      def build_access_token
+        token_params = {
+          :client_secret => client.secret,
+          :grant_type => 'authorization_code',
+          :parse => true
+        }
+        verifier = request.params['code']
+        client.auth_code.get_token(verifier, token_params)
+      end
+
+      private
+
+      def callback_url
+        options[:redirect_uri] || (full_host + script_name + callback_path)
+      end
+
+      def get_token_options(redirect_uri)
+        { :redirect_uri => redirect_uri }.merge(token_params.to_hash(:symbolize_keys => true))
+      end
     end
   end
 end

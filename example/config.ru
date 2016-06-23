@@ -8,6 +8,10 @@ require 'sinatra'
 require 'omniauth'
 require '../lib/omniauth_myvr'
 
+ENV['BASE_SCOPE_URL'] = 'http://local.api.myvr.com:8000/auth/'
+ENV['BASE_SITE'] = 'http://local.api.myvr.com:8000/'
+ENV['MYVR_KEY'] = '811f088e585dd0e4beaba9e758059f02'
+ENV['MYVR_SECRET'] = '6e33b7189bc37bdeb571f94c366b6ef5'
 # Do not use for production code.
 # This is only to make setup easier when running through the sample.
 #
