@@ -6,7 +6,7 @@ require 'uri'
 module OmniAuth
   module Strategies
     class Myvr < OmniAuth::Strategies::OAuth2
-      BASE_SCOPE_URL = "https://api.myvr.com/auth/"
+      BASE_SCOPE_URL = ENV.fetch('BASE_SCOPE_URL', "https://api.myvr.com/auth/")
       BASE_SCOPES = %w[profile email openid]
       DEFAULT_SCOPE = "email,profile"
 
@@ -30,7 +30,7 @@ module OmniAuth
       option :authorized_client_ids, []
 
       option :client_options, {
-        :site          => 'https://myvr.com/',
+        :site          => ENV.fetch('BASE_SITE', 'https://myvr.com/'),
         :authorize_url => '/connect/oauth/auth',
         :token_url     => '/connect/oauth/token'
       }
