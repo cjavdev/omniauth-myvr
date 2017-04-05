@@ -6,7 +6,7 @@ require 'uri'
 module OmniAuth
   module Strategies
     class Myvr < OmniAuth::Strategies::OAuth2
-      if ENV['DEV']
+      if ENV['MYVR_DEV']
         BASE_SCOPE_URL = "http://local.api.myvr.com:8000/auth/"
         option :client_options, {
           :site          => 'http://local.myvr.com:8000/',
